@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Maven: com.ibm.db2:db2jcc4:v10.5fp6">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/com/ibm/db2/db2jcc4/v10.5fp6/db2jcc4-v10.5fp6.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$MAVEN_REPOSITORY$/com/ibm/db2/db2jcc4/v10.5fp6/db2jcc4-v10.5fp6-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$MAVEN_REPOSITORY$/com/ibm/db2/db2jcc4/v10.5fp6/db2jcc4-v10.5fp6-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>
