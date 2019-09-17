@@ -6,6 +6,7 @@
 
 package io.debezium.connector.db2;
 
+import java.sql.*;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -41,23 +42,39 @@ import io.debezium.util.BoundedConcurrentHashMap;
  */
 public class Db2Connection extends JdbcConnection {
 
-    private static final String GET_DATABASE_NAME = "SELECT db_name()";
+    private static final String GET_DATABASE_NAME = "SELECT CURRENT_SERVER FROM SYSIBM.SYSDUMMY1";  // DB2
 
     private static Logger LOGGER = LoggerFactory.getLogger(Db2Connection.class);
 
+    private static final String CDC_SCHEMA = "ASNCDC";
+
     private static final String STATEMENTS_PLACEHOLDER = "#";
-    private static final String GET_MAX_LSN = "SELECT sys.fn_cdc_get_max_lsn()";
-    private static final String LOCK_TABLE = "SELECT * FROM [#] WITH (TABLOCKX)";
+    private static final String GET_MAX_LSN = "SELECT max(CD_NEW_SYNCHPOINT) FROM " + CDC_SCHEMA + ".IBMSNAP_REGISTER";
+    private static final String LOCK_TABLE = "SELECT * FROM [#] WITH CS";  // DB2
     private static final String LSN_TO_TIMESTAMP = "SELECT sys.fn_cdc_map_lsn_to_time(?)";
     private static final String INCREMENT_LSN = "SELECT sys.fn_cdc_increment_lsn(?)";
     private static final String GET_ALL_CHANGES_FOR_TABLE = "SELECT * FROM cdc.[fn_cdc_get_all_changes_#](ISNULL(?,sys.fn_cdc_get_min_lsn('#')), ?, N'all update old')";
-    private static final String GET_LIST_OF_CDC_ENABLED_TABLES = "EXEC sys.sp_cdc_help_change_data_capture";
+    //private static final String GET_LIST_OF_CDC_ENABLED_TABLES = "EXEC sys.sp_cdc_help_change_data_capture";
+    //private static final String GET_LIST_OF_CDC_ENABLED_TABLES = "SELECT * FROM ASN.IBMSNAP_REGISTER WHERE SOURCE_OWNER <> ''";
+    private static final String GET_LIST_OF_CDC_ENABLED_TABLES = "select r.SOURCE_OWNER, r.SOURCE_TABLE, r.CD_OWNER, r.CD_TABLE, r.CD_NEW_SYNCHPOINT, r.CD_OLD_SYNCHPOINT, t.TBSPACEID, t.TABLEID , CAST((t.TBSPACEID * 65536 +  t.TABLEID )AS INTEGER )from " + CDC_SCHEMA + ".IBMSNAP_REGISTER r left JOIN SYSCAT.TABLES t ON r.SOURCE_OWNER  = t.TABSCHEMA AND r.SOURCE_TABLE = t.TABNAME  WHERE r.SOURCE_OWNER <> ''";
+
     private static final String GET_LIST_OF_NEW_CDC_ENABLED_TABLES = "SELECT * FROM cdc.change_tables WHERE start_lsn BETWEEN ? AND ?";
-    private static final String GET_LIST_OF_KEY_COLUMNS = "SELECT * FROM cdc.index_columns WHERE object_id=?";
+    //private static final String GET_LIST_OF_KEY_COLUMNS = "SELECT * FROM cdc.index_columns WHERE object_id=?";
 
-    private static final int CHANGE_TABLE_DATA_COLUMN_OFFSET = 5;
 
-    private static final String URL_PATTERN = "jdbc:db2://${" + JdbcConfiguration.HOSTNAME + "}:${" + JdbcConfiguration.PORT + "};databaseName=${" + JdbcConfiguration.DATABASE + "}";
+    private static final String GET_LIST_OF_KEY_COLUMNS = "SELECT "
+           + "CAST((t.TBSPACEID * 65536 +  t.TABLEID )AS INTEGER ) as objectid, "
+            + "c.colname,c.colno,c.keyseq "
+            + "FROM syscat.tables  as t "
+            + "inner join syscat.columns as c  on t.tabname = c.tabname and t.tabschema = c.tabschema and c.KEYSEQ > 0 AND "
+            + "t.tbspaceid = CAST(BITAND( ? , 4294901760) / 65536 AS SMALLINT) AND t.tableid=  CAST(BITAND( ? , 65535) AS SMALLINT)";
+
+
+    private static final int CHANGE_TABLE_DATA_COLUMN_OFFSET = 3;
+
+   // private static final String URL_PATTERN = "jdbc:db2://${" + JdbcConfiguration.HOSTNAME + "}:${" + JdbcConfiguration.PORT + "};databaseName=${" + JdbcConfiguration.DATABASE + "}";
+   private static final String URL_PATTERN = "jdbc:db2://${" + JdbcConfiguration.HOSTNAME + "}:${" + JdbcConfiguration.PORT + "}/${" + JdbcConfiguration.DATABASE + "}";
+
     private static final ConnectionFactory FACTORY = JdbcConnection.patternBasedFactory(URL_PATTERN,
             DB2Driver.class.getName(),
             Db2Connection.class.getClassLoader());
@@ -84,6 +101,9 @@ public class Db2Connection extends JdbcConnection {
         lsnToInstantCache = new BoundedConcurrentHashMap<>(100);
         realDatabaseName = retrieveRealDatabaseName();
     }
+
+
+
 
     /**
      * @return the current largest log sequence number
@@ -249,6 +269,7 @@ public class Db2Connection extends JdbcConnection {
         return queryAndMap(query, rs -> {
             final Set<ChangeTable> changeTables = new HashSet<>();
             while (rs.next()) {
+                /**
                 changeTables.add(
                         new ChangeTable(
                                 new TableId(realDatabaseName, rs.getString(1), rs.getString(2)),
@@ -256,7 +277,18 @@ public class Db2Connection extends JdbcConnection {
                                 rs.getInt(4),
                                 Lsn.valueOf(rs.getBytes(6)),
                                 Lsn.valueOf(rs.getBytes(7))
+
                         )
+                 **/
+                        changeTables.add(
+                                new ChangeTable(
+                                        new TableId(null, rs.getString(1), rs.getString(2)),
+                                        rs.getString(4),
+                                        rs.getInt(9),
+                                        Lsn.valueOf(rs.getBytes(5)),
+                                        Lsn.valueOf(rs.getBytes(6))
+
+                                )
                 );
             }
             return changeTables;
@@ -291,7 +323,7 @@ public class Db2Connection extends JdbcConnection {
 
         List<Column> columns = new ArrayList<>();
         try (ResultSet rs = metadata.getColumns(
-                realDatabaseName,
+                null,
                 changeTable.getSourceTableId().schema(),
                 changeTable.getSourceTableId().table(),
                 null)
@@ -310,24 +342,37 @@ public class Db2Connection extends JdbcConnection {
                 .create();
     }
 
+
+
     public Table getTableSchemaFromChangeTable(ChangeTable changeTable) throws SQLException {
         final DatabaseMetaData metadata = connection().getMetaData();
         final TableId changeTableId = changeTable.getChangeTableId();
 
         List<ColumnEditor> columnEditors = new ArrayList<>();
-        try (ResultSet rs = metadata.getColumns(realDatabaseName, changeTableId.schema(), changeTableId.table(), null)) {
+        try (ResultSet rs = metadata.getColumns(null, changeTableId.schema(), changeTableId.table(), null)) {
             while (rs.next()) {
                 readTableColumn(rs, changeTableId, null).ifPresent(columnEditors::add);
             }
         }
 
         // The first 5 columns and the last column of the change table are CDC metadata
-        final List<Column> columns = columnEditors.subList(CHANGE_TABLE_DATA_COLUMN_OFFSET, columnEditors.size() - 1).stream()
+        //final List<Column> columns = columnEditors.subList(CHANGE_TABLE_DATA_COLUMN_OFFSET, columnEditors.size() - 1).stream()
+        final List<Column> columns = columnEditors.subList(CHANGE_TABLE_DATA_COLUMN_OFFSET, columnEditors.size() ).stream()
                 .map(c -> c.position(c.position() - CHANGE_TABLE_DATA_COLUMN_OFFSET).create())
                 .collect(Collectors.toList());
 
         final List<String> pkColumnNames = new ArrayList<>();
+        /**  URB
         prepareQuery(GET_LIST_OF_KEY_COLUMNS, ps -> ps.setInt(1, changeTable.getChangeTableObjectId()), rs -> {
+            while (rs.next()) {
+                pkColumnNames.add(rs.getString(2));
+            }
+        });
+        **/
+        prepareQuery(GET_LIST_OF_KEY_COLUMNS, ps -> {
+            ps.setInt(1, changeTable.getChangeTableObjectId());
+            ps.setInt(1, changeTable.getChangeTableObjectId());
+        }, rs -> {
             while (rs.next()) {
                 pkColumnNames.add(rs.getString(2));
             }

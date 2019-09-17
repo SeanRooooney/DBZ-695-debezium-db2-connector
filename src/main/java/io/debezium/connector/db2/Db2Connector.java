@@ -17,7 +17,7 @@ import org.apache.kafka.connect.source.SourceConnector;
 /**
  * The main connector class used to instantiate configuration and execution classes
  *
- * @author
+ * @author Jiri Pechanec
  *
  */
 public class Db2Connector extends SourceConnector {

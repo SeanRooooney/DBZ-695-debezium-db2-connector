@@ -27,16 +27,7 @@
     </properties>
 
 
-      <repositories>
-    <repository>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-      <id>swg-artifactory</id>
-      <name>artifactory-lon02-node1.swg-devops.com-releases</name>
-      <url>https://na.artifactory.swg-devops.com:443/artifactory/cedp-maven-local</url>
-    </repository>
-  </repositories>
+
 
     <dependencies>
         <dependency>
@@ -44,11 +35,12 @@
             <artifactId>debezium-core</artifactId>
         </dependency>
     <!-- Db2 JDBC driver -->
-    <dependency>
-      <groupId>com.ibm.db2</groupId>
-      <artifactId>db2jcc4</artifactId>
-      <version>v10.5fp6</version>
-    </dependency>
+        <!-- https://mvnrepository.com/artifact/com.ibm.db2/jcc -->
+        <dependency>
+            <groupId>com.ibm.db2</groupId>
+            <artifactId>jcc</artifactId>
+            <version>11.5.0.0</version>
+        </dependency>
         <dependency>
             <groupId>org.apache.kafka</groupId>
             <artifactId>connect-api</artifactId>

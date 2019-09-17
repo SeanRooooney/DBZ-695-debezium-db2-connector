@@ -17,7 +17,7 @@ import io.debezium.relational.TableId;
  */
 public class ChangeTable {
 
-    private static final String CDC_SCHEMA = "asncdc";
+    private static final String CDC_SCHEMA = "ASNCDC";
 
     /**
      * The logical name of the change capture process
@@ -56,7 +56,8 @@ public class ChangeTable {
         this.changeTableObjectId = changeTableObjectId;
         this.startLsn = startLsn;
         this.stopLsn = stopLsn;
-        this.changeTableId = sourceTableId != null ? new TableId(sourceTableId.catalog(), CDC_SCHEMA, captureInstance + "_CT") : null;
+        this.changeTableId = sourceTableId != null ? new TableId(sourceTableId.catalog(), CDC_SCHEMA, captureInstance ) : null;
+        //this.changeTableId = sourceTableId != null ? new TableId(sourceTableId.catalog(), CDC_SCHEMA, captureInstance + "_CT") : null;
     }
 
     public ChangeTable(String captureInstance, int changeTableObjectId, Lsn startLsn, Lsn stopLsn) {
