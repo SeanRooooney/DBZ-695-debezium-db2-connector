@@ -91,6 +91,12 @@ public class SourceInfo extends BaseSourceInfo {
 
     @Override
     protected String database() {
-        return tableId.catalog();
+        //urb
+        //return tableId.catalog();
+        String dbn = serverName();
+        //String db2d = ((Db2ConnectorConfig) config).databaseName;
+        //return "TESTDB";
+
+        return serverName();
     }
 }

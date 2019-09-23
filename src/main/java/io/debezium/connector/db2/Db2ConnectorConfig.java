@@ -195,6 +195,8 @@ public class Db2ConnectorConfig extends HistorizedRelationalDatabaseConnectorCon
     public static final Field SERVER_NAME = RelationalDatabaseConnectorConfig.SERVER_NAME
             .withValidation(CommonConnectorConfig::validateServerNameIsDifferentFromHistoryTopicName);
 
+
+
     public static final Field DATABASE_NAME = Field.create(DATABASE_CONFIG_PREFIX + JdbcConfiguration.DATABASE)
             .withDisplayName("Database name")
             .withType(Type.STRING)
@@ -252,7 +254,7 @@ public class Db2ConnectorConfig extends HistorizedRelationalDatabaseConnectorCon
     public static ConfigDef configDef() {
         ConfigDef config = new ConfigDef();
 
-        Field.group(config, "SQL Server", SERVER_NAME, DATABASE_NAME, SNAPSHOT_MODE);
+        Field.group(config, "DB2 Server", SERVER_NAME, DATABASE_NAME, SNAPSHOT_MODE);
         Field.group(config, "History Storage", KafkaDatabaseHistory.BOOTSTRAP_SERVERS,
                 KafkaDatabaseHistory.TOPIC, KafkaDatabaseHistory.RECOVERY_POLL_ATTEMPTS,
                 KafkaDatabaseHistory.RECOVERY_POLL_INTERVAL_MS, HistorizedRelationalDatabaseConnectorConfig.DATABASE_HISTORY);
@@ -328,9 +330,11 @@ public class Db2ConnectorConfig extends HistorizedRelationalDatabaseConnectorCon
 
         @Override
         public boolean isIncluded(TableId t) {
-            return !(t.schema().toLowerCase().equals("cdc") ||
-                    t.schema().toLowerCase().equals("sys") ||
-                    t.table().toLowerCase().equals("systranschemas"));
+            return !(t.table().toLowerCase().startsWith("ibmsnap_") ||
+                    t.schema().toUpperCase().startsWith("ASNCDC") ||
+                    t.schema().toUpperCase().startsWith("SYSTOOLS") ||
+                    t.table().toLowerCase().startsWith("ibmqrep_") );
+
             }
     }
 

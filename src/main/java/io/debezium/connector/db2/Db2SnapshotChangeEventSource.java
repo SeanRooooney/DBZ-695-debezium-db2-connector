@@ -73,12 +73,12 @@ public class Db2SnapshotChangeEventSource extends RelationalSnapshotChangeEventS
 
     @Override
     protected SnapshotContext prepare(ChangeEventSourceContext context) throws Exception {
-        return new SqlServerSnapshotContext(jdbcConnection.getRealDatabaseName());
+        return new Db2SnapshotContext(jdbcConnection.getRealDatabaseName());
     }
 
     @Override
     protected void connectionCreated(SnapshotContext snapshotContext) throws Exception {
-        ((SqlServerSnapshotContext) snapshotContext).isolationLevelBeforeStart = jdbcConnection.connection().getTransactionIsolation();
+        ((Db2SnapshotContext) snapshotContext).isolationLevelBeforeStart = jdbcConnection.connection().getTransactionIsolation();
 
         if (connectorConfig.getSnapshotIsolationMode() == SnapshotIsolationMode.SNAPSHOT) {
             // Terminate any transaction in progress so we can change the isolation level
@@ -92,7 +92,11 @@ public class Db2SnapshotChangeEventSource extends RelationalSnapshotChangeEventS
 
     @Override
     protected Set<TableId> getAllTableIds(SnapshotContext ctx) throws Exception {
-        return jdbcConnection.readTableNames(ctx.catalogName, null, null, new String[] {"TABLE"});
+       // return jdbcConnection.readTableNames(ctx.catalogName, null, null, new String[] {"TABLE"});
+
+
+        return jdbcConnection.readTableNames(null, null, null, new String[] {"TABLE"});
+
     }
 
     @Override
@@ -108,7 +112,7 @@ public class Db2SnapshotChangeEventSource extends RelationalSnapshotChangeEventS
         else if (connectorConfig.getSnapshotIsolationMode() == SnapshotIsolationMode.EXCLUSIVE
                 || connectorConfig.getSnapshotIsolationMode() == SnapshotIsolationMode.REPEATABLE_READ) {
             jdbcConnection.connection().setTransactionIsolation(Connection.TRANSACTION_REPEATABLE_READ);
-                ((SqlServerSnapshotContext) snapshotContext).preSchemaSnapshotSavepoint = jdbcConnection.connection().setSavepoint("dbz_schema_snapshot");
+                ((Db2SnapshotContext) snapshotContext).preSchemaSnapshotSavepoint = jdbcConnection.connection().setSavepoint("dbz_schema_snapshot");
 
             LOGGER.info("Executing schema locking");
             try (Statement statement = jdbcConnection.connection().createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY)) {
@@ -119,7 +123,7 @@ public class Db2SnapshotChangeEventSource extends RelationalSnapshotChangeEventS
 
                     LOGGER.info("Locking table {}", tableId);
 
-                    String query = String.format("SELECT TOP(0) * FROM [%s].[%s] WITH (TABLOCKX)", tableId.schema(), tableId.table());
+                    String query = String.format("SELECT * FROM %s.%s WHERE 0=1 WITH CS", tableId.schema(), tableId.table());
                     statement.executeQuery(query).close();
                 }
             }
@@ -134,7 +138,7 @@ public class Db2SnapshotChangeEventSource extends RelationalSnapshotChangeEventS
         // Exclusive mode: locks should be kept until the end of transaction.
         // read_uncommitted mode; snapshot mode: no locks have been acquired.
         if (connectorConfig.getSnapshotIsolationMode() == SnapshotIsolationMode.REPEATABLE_READ) {
-            jdbcConnection.connection().rollback(((SqlServerSnapshotContext) snapshotContext).preSchemaSnapshotSavepoint);
+            jdbcConnection.connection().rollback(((Db2SnapshotContext) snapshotContext).preSchemaSnapshotSavepoint);
             LOGGER.info("Schema locks released.");
         }
     }
@@ -164,9 +168,19 @@ public class Db2SnapshotChangeEventSource extends RelationalSnapshotChangeEventS
             }
 
             LOGGER.info("Reading structure of schema '{}'", snapshotContext.catalogName);
+            /**
             jdbcConnection.readSchema(
                     snapshotContext.tables,
                     snapshotContext.catalogName,
+                    schema,
+                    connectorConfig.getTableFilters().dataCollectionFilter(),
+                    null,
+                    false
+            );
+             **/
+            jdbcConnection.readSchema(
+                    snapshotContext.tables,
+                    null,
                     schema,
                     connectorConfig.getTableFilters().dataCollectionFilter(),
                     null,
@@ -184,7 +198,7 @@ public class Db2SnapshotChangeEventSource extends RelationalSnapshotChangeEventS
     @Override
     protected void complete(SnapshotContext snapshotContext) {
         try {
-            jdbcConnection.connection().setTransactionIsolation(((SqlServerSnapshotContext) snapshotContext).isolationLevelBeforeStart);
+            jdbcConnection.connection().setTransactionIsolation(((Db2SnapshotContext) snapshotContext).isolationLevelBeforeStart);
         }
         catch (SQLException e) {
             throw new RuntimeException("Failed to set transaction isolation level.", e);
@@ -199,18 +213,18 @@ public class Db2SnapshotChangeEventSource extends RelationalSnapshotChangeEventS
      */
     @Override
     protected Optional<String> getSnapshotSelect(SnapshotContext snapshotContext, TableId tableId) {
-        return Optional.of(String.format("SELECT * FROM [%s].[%s]", tableId.schema(), tableId.table()));
+        return Optional.of(String.format("SELECT * FROM %s.%s", tableId.schema(), tableId.table()));
     }
 
     /**
      * Mutable context which is populated in the course of snapshotting.
      */
-    private static class SqlServerSnapshotContext extends SnapshotContext {
+    private static class Db2SnapshotContext extends SnapshotContext {
 
         private int isolationLevelBeforeStart;
         private Savepoint preSchemaSnapshotSavepoint;
 
-        public SqlServerSnapshotContext(String catalogName) throws SQLException {
+        public Db2SnapshotContext(String catalogName) throws SQLException {
             super(catalogName);
         }
     }
