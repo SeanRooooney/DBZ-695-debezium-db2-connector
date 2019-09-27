@@ -92,7 +92,7 @@ public class Db2SnapshotChangeEventSource extends RelationalSnapshotChangeEventS
 
     @Override
     protected Set<TableId> getAllTableIds(SnapshotContext ctx) throws Exception {
-       // return jdbcConnection.readTableNames(ctx.catalogName, null, null, new String[] {"TABLE"});
+        //return jdbcConnection.readTableNames(ctx.catalogName, null, null, new String[] {"TABLE"});
 
 
         return jdbcConnection.readTableNames(null, null, null, new String[] {"TABLE"});
@@ -112,7 +112,7 @@ public class Db2SnapshotChangeEventSource extends RelationalSnapshotChangeEventS
         else if (connectorConfig.getSnapshotIsolationMode() == SnapshotIsolationMode.EXCLUSIVE
                 || connectorConfig.getSnapshotIsolationMode() == SnapshotIsolationMode.REPEATABLE_READ) {
             jdbcConnection.connection().setTransactionIsolation(Connection.TRANSACTION_REPEATABLE_READ);
-                ((Db2SnapshotContext) snapshotContext).preSchemaSnapshotSavepoint = jdbcConnection.connection().setSavepoint("dbz_schema_snapshot");
+                ((Db2SnapshotContext) snapshotContext).preSchemaSnapshotSavepoint = jdbcConnection.connection().setSavepoint("db2_schema_snapshot");
 
             LOGGER.info("Executing schema locking");
             try (Statement statement = jdbcConnection.connection().createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY)) {

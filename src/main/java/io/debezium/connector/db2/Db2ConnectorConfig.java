@@ -354,3 +354,4 @@ public class Db2ConnectorConfig extends HistorizedRelationalDatabaseConnectorCon
         return Module.contextName();
     }
 }
+

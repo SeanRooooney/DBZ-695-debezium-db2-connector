@@ -54,10 +54,10 @@ import io.debezium.util.Metronome;
  */
 public class Db2StreamingChangeEventSource implements StreamingChangeEventSource {
 
-    private static final int COL_COMMIT_LSN = 1;
-    private static final int COL_ROW_LSN = 2;
-    private static final int COL_OPERATION = 3;
-    private static final int COL_DATA = 5;
+    private static final int COL_COMMIT_LSN = 5;
+    private static final int COL_ROW_LSN = 6;
+    private static final int COL_OPERATION = 1;
+    private static final int COL_DATA = 8;
 
     private static final Pattern MISSING_CDC_FUNCTION_CHANGES_ERROR = Pattern.compile("Invalid object name 'cdc.fn_cdc_get_all_changes_(.*)'\\.");
 
@@ -256,7 +256,7 @@ public class Db2StreamingChangeEventSource implements StreamingChangeEventSource
             throws InterruptedException, SQLException {
         final ChangeTable newTable = schemaChangeCheckpoints.poll();
         LOGGER.info("Migrating schema to {}", newTable);
-        dispatcher.dispatchSchemaChangeEvent(newTable.getSourceTableId(), new DB2SchemaChangeEventEmitter(offsetContext, newTable, metadataConnection.getTableSchemaFromTable(newTable), SchemaChangeEventType.ALTER));
+        dispatcher.dispatchSchemaChangeEvent(newTable.getSourceTableId(), new Db2SchemaChangeEventEmitter(offsetContext, newTable, metadataConnection.getTableSchemaFromTable(newTable), SchemaChangeEventType.ALTER));
     }
 
     private ChangeTable[] processErrorFromChangeTableQuery(SQLException exception, ChangeTable[] currentChangeTables) throws Exception {
@@ -315,7 +315,7 @@ public class Db2StreamingChangeEventSource implements StreamingChangeEventSource
                 // We need to read the source table schema - nullability information cannot be obtained from change table
                 dispatcher.dispatchSchemaChangeEvent(
                         currentTable.getSourceTableId(),
-                        new DB2SchemaChangeEventEmitter(
+                        new Db2SchemaChangeEventEmitter(
                                 offsetContext,
                                 currentTable,
                                 dataConnection.getTableSchemaFromTable(currentTable),

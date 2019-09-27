@@ -18,16 +18,16 @@ import io.debezium.schema.SchemaChangeEvent.SchemaChangeEventType;
  *
  * @author Jiri Pechanec
  */
-public class DB2SchemaChangeEventEmitter implements SchemaChangeEventEmitter {
+public class Db2SchemaChangeEventEmitter implements SchemaChangeEventEmitter {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(DB2SchemaChangeEventEmitter.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(Db2SchemaChangeEventEmitter.class);
 
     private final Db2OffsetContext offsetContext;
     private final ChangeTable changeTable;
     private final Table tableSchema;
     private final SchemaChangeEventType eventType;
 
-    public DB2SchemaChangeEventEmitter(Db2OffsetContext offsetContext, ChangeTable changeTable, Table tableSchema, SchemaChangeEventType eventType) {
+    public Db2SchemaChangeEventEmitter(Db2OffsetContext offsetContext, ChangeTable changeTable, Table tableSchema, SchemaChangeEventType eventType) {
         this.offsetContext = offsetContext;
         this.changeTable = changeTable;
         this.tableSchema = tableSchema;
@@ -39,8 +39,6 @@ public class DB2SchemaChangeEventEmitter implements SchemaChangeEventEmitter {
         final SchemaChangeEvent event = new SchemaChangeEvent(
                 offsetContext.getPartition(),
                 offsetContext.getOffset(),
-                // urb
-                //null,
                 changeTable.getSourceTableId().catalog(),
                 changeTable.getSourceTableId().schema(),
                 "N/A",
