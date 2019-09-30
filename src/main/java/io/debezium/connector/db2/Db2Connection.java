@@ -73,6 +73,7 @@ public class Db2Connection extends JdbcConnection {
 
     //private static final String GET_ALL_CHANGES_FOR_TABLE = "SELECT * FROM cdc.[fn_cdc_get_all_changes_#](ISNULL(?,sys.fn_cdc_get_min_lsn('#')), ?, N'all update old')";
 
+/**
     private static final String GET_ALL_CHANGES_FOR_TABLE = "SELECT "
             + "CASE "
             + "WHEN IBMSNAP_OPERATION = 'D' AND (LEAD(cdc.IBMSNAP_OPERATION,1,'X') OVER (PARTITION BY cdc.IBMSNAP_COMMITSEQ ORDER BY cdc.IBMSNAP_OPERATION)) ='I' THEN 3 "
@@ -83,6 +84,28 @@ public class Db2Connection extends JdbcConnection {
             + "OPCODE,"
             + "cdc.* "
             + "FROM ASNCDC.CDC_DEMO_SIMPLE cdc WHERE   IBMSNAP_COMMITSEQ > ? AND IBMSNAP_COMMITSEQ <= ? "
+            + "order by IBMSNAP_COMMITSEQ, IBMSNAP_INTENTSEQ";
+
+
+**/
+
+    private static final String GET_ALL_CHANGES_FOR_TABLE = "SELECT "
+            + "CASE "
+            + "  WHEN IBMSNAP_OPERATION = 'D' AND OPNEXT ='I' THEN 3 "
+            + "  WHEN IBMSNAP_OPERATION = 'I' AND OPB ='D' THEN 4 "
+            + "  WHEN IBMSNAP_OPERATION = 'I' THEN 1 "
+            + "  WHEN IBMSNAP_OPERATION = 'D' THEN 2 "
+            + " END "
+            + " OPCODE , NULL, "
+            + " a.*  "
+            + "FROM( "
+            + "    SELECT "
+            + "      (LEAD(cdc.IBMSNAP_OPERATION,1,'X') OVER (PARTITION BY cdc.IBMSNAP_COMMITSEQ ORDER BY cdc.IBMSNAP_OPERATION)) AS OPNEXT, "
+            + "      (LAG(cdc.IBMSNAP_OPERATION,1,'X') OVER (PARTITION BY cdc.IBMSNAP_COMMITSEQ ORDER BY cdc.IBMSNAP_OPERATION)) AS OPB, "
+            + "      cdc.* "
+            + "    FROM ASNCDC.# cdc "
+            + "        WHERE   IBMSNAP_COMMITSEQ >  ? AND  IBMSNAP_COMMITSEQ <= ? "
+            + "    ) a  "
             + "order by IBMSNAP_COMMITSEQ, IBMSNAP_INTENTSEQ";
 
 
@@ -110,7 +133,7 @@ public class Db2Connection extends JdbcConnection {
             + "t.tbspaceid = CAST(BITAND( ? , 4294901760) / 65536 AS SMALLINT) AND t.tableid=  CAST(BITAND( ? , 65535) AS SMALLINT)";
 
 
-    private static final int CHANGE_TABLE_DATA_COLUMN_OFFSET = 5;
+    private static final int CHANGE_TABLE_DATA_COLUMN_OFFSET = 7;
 
     // private static final String URL_PATTERN = "jdbc:db2://${" + JdbcConfiguration.HOSTNAME + "}:${" + JdbcConfiguration.PORT + "};databaseName=${" + JdbcConfiguration.DATABASE + "}";
     private static final String URL_PATTERN = "jdbc:db2://${" + JdbcConfiguration.HOSTNAME + "}:${" + JdbcConfiguration.PORT + "}/${" + JdbcConfiguration.DATABASE + "}";
