@@ -49,7 +49,8 @@ public class Db2Connection extends JdbcConnection {
     private static final String CDC_SCHEMA = "ASNCDC";
 
     private static final String STATEMENTS_PLACEHOLDER = "#";
-    private static final String GET_MAX_LSN = "SELECT max(CD_NEW_SYNCHPOINT) FROM " + CDC_SCHEMA + ".IBMSNAP_REGISTER  FETCH FIRST ROW ONLY";
+    private static final String GET_MAX_LSN = "SELECT max(t.SYNCHPOINT) FROM ( SELECT CD_NEW_SYNCHPOINT AS SYNCHPOINT FROM " + CDC_SCHEMA + ".IBMSNAP_REGISTER UNION ALL SELECT SYNCHPOINT AS SYNCHPOINT FROM " + CDC_SCHEMA + ".IBMSNAP_REGISTER) t";
+
     private static final String LOCK_TABLE = "SELECT * FROM # WITH CS";  // DB2
     //private static final String LSN_TO_TIMESTAMP = "SELECT sys.fn_cdc_map_lsn_to_time(?)";
 
