@@ -33,10 +33,12 @@ public class Db2DatabaseSchema extends HistorizedRelationalDatabaseSchema {
                 new TableSchemaBuilder(
                         new Db2ValueConverters(connectorConfig.getDecimalMode(), connectorConfig.getTemporalPrecisionMode()),
                         schemaNameAdjuster,
-                        connectorConfig.getSourceInfoStructMaker().schema()
+                        connectorConfig.getSourceInfoStructMaker().schema(),
+                        connectorConfig.getSanitizeFieldNames()
                 ),
-                false);
+                false, connectorConfig.getKeyMapper());
     }
+
 
     @Override
     public void applySchemaChange(SchemaChangeEvent schemaChange) {
