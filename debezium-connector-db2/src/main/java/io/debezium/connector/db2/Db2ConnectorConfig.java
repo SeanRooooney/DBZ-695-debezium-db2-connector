@@ -5,6 +5,9 @@
  */
 package io.debezium.connector.db2;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Predicate;
 
 import org.apache.kafka.common.config.ConfigDef;
@@ -279,7 +282,7 @@ public class Db2ConnectorConfig extends HistorizedRelationalDatabaseConnectorCon
     private final ColumnNameFilter columnFilter;
 
     public Db2ConnectorConfig(Configuration config) {
-        super(config, config.getString(SERVER_NAME), new SystemTablesPredicate(), x -> x.schema() + "." + x.table());
+        super(config, config.getString(SERVER_NAME), new SystemTablesPredicate(), x -> x.schema() + "." + x.table(), false);
 
         this.databaseName = config.getString(DATABASE_NAME);
         this.snapshotMode = SnapshotMode.parse(config.getString(SNAPSHOT_MODE), SNAPSHOT_MODE.defaultValueAsString());
@@ -352,6 +355,29 @@ public class Db2ConnectorConfig extends HistorizedRelationalDatabaseConnectorCon
     @Override
     public String getContextName() {
         return Module.contextName();
+    }
+    
+    /**
+     * Returns any SELECT overrides, if present.
+     */
+    @Override
+    public Map<TableId, String> getSnapshotSelectOverridesByTable() {
+        String tableList = getConfig().getString(SNAPSHOT_SELECT_STATEMENT_OVERRIDES_BY_TABLE);
+
+        if (tableList == null) {
+            return Collections.emptyMap();
+        }
+
+        Map<TableId, String> snapshotSelectOverridesByTable = new HashMap<>();
+
+        for (String table : tableList.split(",")) {
+            snapshotSelectOverridesByTable.put(
+                TableId.parse(table, false),
+                getConfig().getString(SNAPSHOT_SELECT_STATEMENT_OVERRIDES_BY_TABLE + "." + table)
+            );
+        }
+
+        return Collections.unmodifiableMap(snapshotSelectOverridesByTable);
     }
 }
 
