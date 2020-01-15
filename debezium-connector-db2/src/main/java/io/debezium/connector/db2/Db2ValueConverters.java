@@ -4,13 +4,18 @@
  * Licensed under the Apache Software License version 2.0, available at http://www.apache.org/licenses/LICENSE-2.0
  */
 package io.debezium.connector.db2;
-
+import com.ibm.db2.jcc.DB2Driver;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.sql.Types;
 import java.time.ZoneOffset;
+import java.util.Arrays;
 
 import org.apache.kafka.connect.data.Field;
 import org.apache.kafka.connect.data.SchemaBuilder;
 
+import io.debezium.data.SpecialValueDecimal;
 import io.debezium.jdbc.JdbcValueConverters;
 import io.debezium.jdbc.TemporalPrecisionMode;
 import io.debezium.relational.Column;
@@ -52,6 +57,8 @@ public class Db2ValueConverters extends JdbcValueConverters {
             case Types.TINYINT:
                 // values are an 8-bit unsigned integer value between 0 and 255, we thus need to store it in short int
                 return SchemaBuilder.int16();
+            case 1111:
+            	return SpecialValueDecimal.builder(decimalMode, column.length(), 0);
             /**
             // Floating point
             case microsoft.sql.Types.SMALLMONEY:
@@ -72,7 +79,10 @@ public class Db2ValueConverters extends JdbcValueConverters {
             case Types.TINYINT:
                 // values are an 8-bit unsigned integer value between 0 and 255, we thus need to store it in short int
                 return (data) -> convertSmallInt(column, fieldDefn, data);
-            /**
+            case 1111:
+            	//return (data) -> convertDECFloat(column, fieldDefn, data);
+            	return (data) -> convertDecimal(column, fieldDefn, data);
+             /**
             // Floating point
             case microsoft.sql.Types.SMALLMONEY:
             case microsoft.sql.Types.MONEY:
@@ -111,5 +121,7 @@ public class Db2ValueConverters extends JdbcValueConverters {
         return super.convertTimestampWithZone(column, fieldDefn, LocalDateTime.ofEpochSecond(utc.getTime() / 1000, utc.getNanos(), offset).atOffset(offset));
         **/
     }
-
+    
 }
+    
+ 
