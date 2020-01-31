@@ -57,7 +57,7 @@ public class TestHelper {
         return JdbcConfiguration.copy(Configuration.fromSystemProperties("database."))
                 .withDefault(JdbcConfiguration.DATABASE, TEST_DATABASE)
                 .withDefault(JdbcConfiguration.HOSTNAME, "localhost")
-                .withDefault(JdbcConfiguration.PORT, 50005)
+                .withDefault(JdbcConfiguration.PORT, 50000)
                 .withDefault(JdbcConfiguration.USER, "db2inst1")
                 .withDefault(JdbcConfiguration.PASSWORD, "admin")
                 .build();
