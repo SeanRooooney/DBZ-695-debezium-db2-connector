@@ -137,6 +137,9 @@ ARCH_LEVEL                      CHAR( 4) NOT NULL WITH DEFAULT '1021',
 COMPATIBILITY                   CHAR( 4) NOT NULL WITH DEFAULT '1021')
 	ORGANIZE BY ROW;
 
+-- IBMSNAP_CAPPARMS  -->  https://www.ibm.com/support/knowledgecenter/en/SSTRGZ_11.4.0/com.ibm.swg.im.iis.db.repl.sqlrepl.doc/topics/iiyrsctbcapparms.html
+-- COMMIT_INTERVAL from default 5 second to 1 second
+-- SLEEP_INTERVAL  from default 30 second to 1 second 
 
 INSERT INTO ASNCDC.IBMSNAP_CAPPARMS(
 RETENTION_LIMIT,
@@ -159,13 +162,13 @@ COMPATIBILITY)
 VALUES (
 10080,
 10080,
-30,
+1,
 300,
 10080,
 10080,
 300,
 32,
-5,
+1,
 'Y',
 'Y',
 'N',
