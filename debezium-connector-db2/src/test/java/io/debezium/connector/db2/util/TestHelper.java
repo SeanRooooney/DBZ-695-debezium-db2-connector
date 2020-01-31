@@ -42,7 +42,7 @@ public class TestHelper {
 
     public static final Path DB_HISTORY_PATH = Testing.Files.createTestingPath("file-db-history-connect.txt").toAbsolutePath();
     public static final String TEST_DATABASE = "testdb";
-    public static final int WAIT_FOR_CDC = 60 * 1000;
+    public static final int WAIT_FOR_CDC = 3 * 1000;
 
     private static final String STATEMENTS_PLACEHOLDER = "#";
 
@@ -55,9 +55,9 @@ public class TestHelper {
 
     public static JdbcConfiguration adminJdbcConfig() {
         return JdbcConfiguration.copy(Configuration.fromSystemProperties("database."))
-                .withDefault(JdbcConfiguration.DATABASE, "testdb")
+                .withDefault(JdbcConfiguration.DATABASE, TEST_DATABASE)
                 .withDefault(JdbcConfiguration.HOSTNAME, "localhost")
-                .withDefault(JdbcConfiguration.PORT, 50000)
+                .withDefault(JdbcConfiguration.PORT, 50005)
                 .withDefault(JdbcConfiguration.USER, "db2inst1")
                 .withDefault(JdbcConfiguration.PASSWORD, "admin")
                 .build();
